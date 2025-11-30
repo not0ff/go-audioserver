@@ -1,13 +1,21 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
+	"io"
 	"log"
 	"net"
+	"os"
 
 	"github.com/not0ff/go-audioserver/internal/message"
+	"github.com/not0ff/go-audioserver/internal/packet"
 )
 
 const SockAddr = "/tmp/uds.sock"
+const DataPath = "/Audio/audio.mp3"
+
+// ! NOTE: That's a simple client meant only for testing some basic functions
 
 func main() {
 	conn, err := net.Dial("unix", SockAddr)
@@ -16,18 +24,61 @@ func main() {
 	}
 	defer conn.Close()
 
-	s := "Hello from the void"
-	msg := message.NewMessage()
-	msg.SetData([]byte(s))
-	if err := msg.Write(conn); err != nil {
-		log.Printf("Error sending message: %s", err)
-		return
-	}
-	log.Printf("Sent %s", msg)
+	audioId := 1102
 
-	if err := msg.Read(conn); err != nil {
-		log.Printf("Error receiving message: %s", err)
+	var b bytes.Buffer
+	w := gzip.NewWriter(&b)
+	defer w.Close()
+
+	data, err := os.Open(DataPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	io.Copy(w, data)
+
+	msg := message.NewMessage()
+	msg.Action = 0
+	args := message.PlayPayload{
+		Id:     audioId,
+		Format: "mp3",
+		Data:   b.Bytes(),
+		Volume: -2,
+	}
+	if err := msg.SetPayload(args); err != nil {
+		log.Fatal(err)
+	}
+
+	d, err := msg.Encode()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	p := packet.NewPacket()
+	p.SetData(d)
+	if err := p.Write(conn); err != nil {
+		log.Printf("Error sending packet: %s", err)
 		return
 	}
-	log.Printf("Received %s", msg)
+	// log.Printf("Sent %s", p)
+
+	// time.Sleep(time.Second * 5)
+	// msg = message.NewMessage()
+	// msg.Action = 1
+	// args2 := message.IdPayload{Id: audioId}
+	// if err := msg.SetPayload(args2); err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// d, err = msg.Encode()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// p = packet.NewPacket()
+	// p.SetData(d)
+	// if err := p.Write(conn); err != nil {
+	// 	log.Printf("Error sending packet: %s", err)
+	// 	return
+	// }
+	// log.Printf("Sent %s", p)
 }
