@@ -24,12 +24,12 @@ type Server interface {
 
 type UdsServer struct {
 	sockAddr string
-	player   audio.AudioPlayer
+	player   *audio.AudioPlayer
 	quitChan chan os.Signal
 }
 
 func NewUdsServer(addr string) *UdsServer {
-	return &UdsServer{sockAddr: addr, player: *audio.NewAudioPlayer(), quitChan: make(chan os.Signal, 1)}
+	return &UdsServer{sockAddr: addr, player: audio.NewAudioPlayer(), quitChan: make(chan os.Signal, 1)}
 }
 
 func (s *UdsServer) Start() {
@@ -96,30 +96,39 @@ func (s *UdsServer) HandleClient(c net.Conn) {
 	log.Print("Connection closed")
 }
 
+func (s *UdsServer) runAction(act int, p message.Payload) error {
+	// It should be a valid type when passed
+	switch act {
+	case 0:
+		return s.player.Play(p.(*message.PlayPayload))
+	case 1:
+		return s.player.Pause(p.(message.IdPayload).Id)
+	case 2:
+		return s.player.Resume(p.(message.IdPayload).Id)
+	case 3:
+		return s.player.Quit(p.(message.IdPayload).Id)
+	default:
+		return errors.New("invalid action id")
+	}
+}
+
 // Executes funtion according to message action
-func (s *UdsServer) ProcessMessage(m *message.Message) error {
+func (s *UdsServer) ProcessMessage(m *message.Message) {
 	if m.Action == 0 {
 		pp := &message.PlayPayload{}
 		if err := json.Unmarshal(m.Payload, pp); err != nil {
 			log.Print("Cannot read invalid payload")
 		}
-		s.player.Play(pp)
+		if err := s.runAction(m.Action, pp); err != nil {
+			log.Printf("Error running action: %s", err)
+		}
 	} else if m.Action >= 1 && m.Action <= 3 {
 		p := message.IdPayload{}
 		if err := json.Unmarshal(m.Payload, &p); err != nil {
 			log.Print("Cannot read invalid payload")
 		}
-
-		switch m.Action {
-		case 1:
-			s.player.Pause(p.Id)
-		case 2:
-			s.player.Resume(p.Id)
-		case 3:
-			s.player.Quit(p.Id)
+		if err := s.runAction(m.Action, p); err != nil {
+			log.Printf("Error running action: %s", err)
 		}
-	} else {
-		log.Printf("Invalid action number \"%v\"", m.Action)
 	}
-	return nil
 }

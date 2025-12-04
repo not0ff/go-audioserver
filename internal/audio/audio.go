@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"time"
 
@@ -20,16 +19,19 @@ import (
 
 const ConstSampleRate beep.SampleRate = 44100
 
+var (
+	ErrStreamerNotExist = errors.New("streamer does not exist")
+	ErrStreamerExist    = errors.New("streamer already exists")
+)
+
 type AudioPlayer struct {
 	controls map[int]*beep.Ctrl
-	quits    map[int]chan bool
 }
 
 func NewAudioPlayer() *AudioPlayer {
 	// Initialize speaker with constant sample rate
 	speaker.Init(ConstSampleRate, ConstSampleRate.N(time.Second/10))
-
-	return &AudioPlayer{controls: map[int]*beep.Ctrl{}, quits: map[int]chan bool{}}
+	return &AudioPlayer{controls: map[int]*beep.Ctrl{}}
 }
 
 // Return reader for audio data specified in payload
@@ -50,74 +52,79 @@ func (a *AudioPlayer) readAudio(p *message.PlayPayload) (io.Reader, error) {
 }
 
 // Decodes audio using a proper coding format
-func (a *AudioPlayer) decodeAudio(r io.Reader, format string) (beep.StreamSeekCloser, beep.Format, error) {
+func (a *AudioPlayer) decodeAudio(r io.Reader, format string) (beep.StreamSeekCloser, *beep.Format, error) {
 	switch format {
 	case "mp3":
 		s, f, err := mp3.Decode(io.NopCloser(r))
 		if err != nil {
-			return nil, beep.Format{}, err
+			return nil, nil, err
 		}
-		return s, f, nil
+		return s, &f, nil
 
 	case "wav":
 		s, f, err := wav.Decode(r)
 		if err != nil {
-			return nil, beep.Format{}, err
+			return nil, nil, err
 		}
-		return s, f, nil
+		return s, &f, nil
 
 	default:
-		return nil, beep.Format{}, fmt.Errorf("unsupported format \"%s\"", format)
+		return nil, nil, fmt.Errorf("unsupported format \"%s\"", format)
 	}
 }
 
-func (a *AudioPlayer) Pause(id int) {
-	speaker.Lock()
+func (a *AudioPlayer) Pause(id int) error {
 	if ctrl, ok := a.controls[id]; !ok {
-		log.Printf("Error pausing, streamer doesnt exist")
+		return ErrStreamerNotExist
 	} else {
+		speaker.Lock()
 		ctrl.Paused = true
+		speaker.Unlock()
 	}
-	speaker.Unlock()
+	return nil
 }
 
-func (a *AudioPlayer) Resume(id int) {
-	speaker.Lock()
+func (a *AudioPlayer) Resume(id int) error {
 	if ctrl, ok := a.controls[id]; !ok {
-		log.Printf("Error resuming, streamer doesnt exist")
+		return ErrStreamerNotExist
 	} else {
+		speaker.Lock()
 		ctrl.Paused = false
+		speaker.Unlock()
 	}
-	speaker.Unlock()
+	return nil
 }
 
-func (a *AudioPlayer) Quit(id int) {
-	if quit, ok := a.quits[id]; !ok {
-		log.Printf("Error quiting, streamer doesnt exist")
+func (a *AudioPlayer) Quit(id int) error {
+	if ctrl, ok := a.controls[id]; !ok {
+		return ErrStreamerNotExist
 	} else {
-		quit <- true
+		speaker.Lock()
+		ctrl.Streamer = nil
 		a.cleanup(id)
+		speaker.Unlock()
 	}
+	return nil
 }
 
 func (a *AudioPlayer) cleanup(id int) {
-	close(a.quits[id])
-	delete(a.quits, id)
 	delete(a.controls, id)
 }
 
-// Plays audio from message payload (blocking)
-func (a *AudioPlayer) Play(p *message.PlayPayload) {
+// Plays audio from message payload
+func (a *AudioPlayer) Play(p *message.PlayPayload) error {
+	if _, exists := a.controls[p.Id]; exists {
+		return ErrStreamerExist
+	}
+
 	r, err := a.readAudio(p)
 	if err != nil {
-		log.Printf("Error reading audio: %s", err)
-		return
+		return err
 	}
 
 	streamer, format, err := a.decodeAudio(r, p.Format)
 	if err != nil {
-		log.Printf("Error decoding audio: %s", err)
-		return
+		return err
 	}
 	defer streamer.Close()
 
@@ -127,15 +134,9 @@ func (a *AudioPlayer) Play(p *message.PlayPayload) {
 		l = -1
 	}
 
-	// Create callback so function returns after ending playback
-	quit := make(chan bool)
-	sq := beep.Seq(beep.Loop(l, streamer), beep.Callback(func() {
-		quit <- true
-		a.cleanup(p.Id)
-	}))
-
 	// Add controls for pausing/resuming
-	ctrl := &beep.Ctrl{Streamer: sq, Paused: false}
+	ctrl := &beep.Ctrl{Streamer: beep.Loop(l, streamer), Paused: false}
+	a.controls[p.Id] = ctrl
 
 	// Apply volume options
 	volume := &effects.Volume{
@@ -145,10 +146,6 @@ func (a *AudioPlayer) Play(p *message.PlayPayload) {
 		Silent:   false,
 	}
 
-	// Bind playback control and termination to provided ID
-	a.controls[p.Id] = ctrl
-	a.quits[p.Id] = quit
-
 	// Resample if audio doesn't match constant sample rate
 	var st beep.Streamer
 	if format.SampleRate != ConstSampleRate {
@@ -157,6 +154,8 @@ func (a *AudioPlayer) Play(p *message.PlayPayload) {
 		st = volume
 	}
 
-	speaker.Play(st)
-	<-quit
+	speaker.Play(beep.Seq(st, beep.Callback(func() {
+		a.cleanup(p.Id)
+	})))
+	return nil
 }
