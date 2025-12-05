@@ -5,14 +5,14 @@ import (
 	"log"
 	"net"
 
-	"github.com/not0ff/go-audioserver/internal/message"
-	"github.com/not0ff/go-audioserver/internal/packet"
+	"github.com/not0ff/go-audioserver/pkg/message"
+	"github.com/not0ff/go-audioserver/pkg/packet"
 )
 
 // ! NOTE: That's a simple client meant only for testing some basic functions
 
 var (
-	sockAddr    = flag.String("sockFile", "/tmp/uds.sock", "Path to unix sock file")
+	sockAddr    = flag.String("sockFile", "/tmp/go-audioserver.sock", "Path to socket address")
 	audioFile   = flag.String("audioFile", "", "Path to audio file to send")
 	audioFormat = flag.String("audioFormat", "", "Format of provided audio file")
 )

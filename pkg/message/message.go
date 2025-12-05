@@ -5,19 +5,19 @@ import (
 )
 
 type Message struct {
-	Action  int    `json:"action"`
-	Payload []byte `json:"payload"`
+	Action  int    `json:"action,omitempty"`
+	Payload []byte `json:"payload,omitempty"`
 }
 
 type Payload any
 
 type PlayPayload struct {
-	Id     int
-	Format string
-	Path   string
-	Data   []byte
-	Volume int
-	Loop   bool
+	Id     int    `json:"id,omitempty"`
+	Format string `json:"format,omitempty"`
+	Path   string `json:"path,omitempty"`
+	Data   []byte `json:"data,omitempty"`
+	Volume int    `json:"volume,omitempty"`
+	Loop   bool   `json:"loop,omitempty"`
 }
 
 type IdPayload struct {

@@ -14,7 +14,7 @@ import (
 	"github.com/gopxl/beep/mp3"
 	"github.com/gopxl/beep/speaker"
 	"github.com/gopxl/beep/wav"
-	"github.com/not0ff/go-audioserver/internal/message"
+	"github.com/not0ff/go-audioserver/pkg/message"
 )
 
 const ConstSampleRate beep.SampleRate = 44100

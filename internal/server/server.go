@@ -11,8 +11,8 @@ import (
 	"syscall"
 
 	"github.com/not0ff/go-audioserver/internal/audio"
-	"github.com/not0ff/go-audioserver/internal/message"
-	"github.com/not0ff/go-audioserver/internal/packet"
+	"github.com/not0ff/go-audioserver/pkg/message"
+	"github.com/not0ff/go-audioserver/pkg/packet"
 )
 
 type Server interface {
