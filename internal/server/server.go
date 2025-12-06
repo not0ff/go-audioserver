@@ -82,7 +82,6 @@ func (s *UdsServer) HandleClient(c net.Conn) {
 			}
 			break
 		}
-		log.Printf("Received %s", p)
 
 		msg := message.NewMessage()
 		if err := msg.Decode(p.Data); err != nil {
@@ -119,6 +118,7 @@ func (s *UdsServer) ProcessMessage(m *message.Message) {
 		if err := json.Unmarshal(m.Payload, pp); err != nil {
 			log.Print("Cannot read invalid payload")
 		}
+		log.Printf("Received: [Action:%v; Payload:%s]", m.Action, pp)
 		if err := s.runAction(m.Action, pp); err != nil {
 			log.Printf("Error running action: %s", err)
 		}
@@ -127,6 +127,7 @@ func (s *UdsServer) ProcessMessage(m *message.Message) {
 		if err := json.Unmarshal(m.Payload, &p); err != nil {
 			log.Print("Cannot read invalid payload")
 		}
+		log.Printf("Received: [Action:%v; Payload:%+v]", m.Action, p)
 		if err := s.runAction(m.Action, p); err != nil {
 			log.Printf("Error running action: %s", err)
 		}

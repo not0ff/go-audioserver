@@ -39,14 +39,22 @@ $ export GOPATH=$HOME/go
 $ export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 ```
 ### Installation
-Install with *go install*
+Install server with *go install*
 ```
 $ go install github.com/not0ff/go-audioserver/cmd/go-audioserver@latest
+```
+*Optional:* Install cli client
+```
+$ go install github.com/not0ff/go-audioserver/cmd/audioserver-cli@latest
 ```
 ### Commands
 Run local server
 ```
 $ go-audioserver -sock /path/to/sock # Defaults to /tmp/go-audioserver.sock
+```
+To check cli client options run:
+```
+$ audioserver-cli -h
 ```
 
 ## Packet structure
@@ -62,10 +70,10 @@ Message structure
 | payload | bytes | PlayPayload(play); IdPayload(pause, resume, quit) | Marshalled json payload |
 
 Payload Fields
-| IdPayload | PlayPayload | Type | Required | Info |
+| PlayPayload | IdPayload | Type | Required | Info |
 | -- | -- | -- | -- | -- |
 | id| id | int | Yes | Reference id for playback control |
-| format | --- | string | Yes | Format of audio (supported "wav", "mp3") |
+| format | --- | string | Yes | Format of audio (supported: "wav", "mp3") |
 | path | --- | string | No if "data"| Path to audio file on system |
 | data | --- | bytes | No if "path" | Audio data compressed with gzip| 
 | volume | --- | int | No | Positive number increases volume, nagative decreases  |

@@ -2,6 +2,7 @@ package message
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 type Message struct {
@@ -18,6 +19,10 @@ type PlayPayload struct {
 	Data   []byte `json:"data,omitempty"`
 	Volume int    `json:"volume,omitempty"`
 	Loop   bool   `json:"loop,omitempty"`
+}
+
+func (p *PlayPayload) String() string {
+	return fmt.Sprintf("{Id:%v Format:%s Path:%s Data:%v Volume:%v Loop:%v}", p.Id, p.Format, p.Path, len(p.Data), p.Volume, p.Loop)
 }
 
 type IdPayload struct {
