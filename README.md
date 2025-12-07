@@ -25,36 +25,36 @@ Server supports:
 Make sure you have installed the newest version of go installed
 - On Ubuntu/Debian:
 ```
-$ sudo add-apt-repository ppa:longsleep/golang-backports
-$ $ sudo apt update
-$ sudo apt install golang-go
+sudo add-apt-repository ppa:longsleep/golang-backports
+sudo apt update
+sudo apt install golang-go
 ```
 - On Fedora:
 ```
-$ sudo dnf install golang -y   
+sudo dnf install golang -y   
 ```
 Add GOPATH to env
 ```
-$ export GOPATH=$HOME/go
-$ export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+export GOPATH=$HOME/go
+export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 ```
 ### Installation
 Install server with *go install*
 ```
-$ go install github.com/not0ff/go-audioserver/cmd/go-audioserver@latest
+go install github.com/not0ff/go-audioserver/cmd/go-audioserver@latest
 ```
 *Optional:* Install cli client
 ```
-$ go install github.com/not0ff/go-audioserver/cmd/audioserver-cli@latest
+go install github.com/not0ff/go-audioserver/cmd/audioserver-cli@latest
 ```
 ### Commands
 Run local server
 ```
-$ go-audioserver -sock /path/to/sock # Defaults to /tmp/go-audioserver.sock
+go-audioserver -sock /path/to/sock # Defaults to /tmp/go-audioserver.sock
 ```
 To check cli client options run:
 ```
-$ audioserver-cli -h
+audioserver-cli -h
 ```
 
 ## Packet structure

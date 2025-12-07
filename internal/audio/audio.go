@@ -25,13 +25,14 @@ var (
 )
 
 type AudioPlayer struct {
-	controls map[int]*beep.Ctrl
+	controls  map[int]*beep.Ctrl
+	streamers map[int]*beep.StreamSeekCloser
 }
 
 func NewAudioPlayer() *AudioPlayer {
 	// Initialize speaker with constant sample rate
 	speaker.Init(ConstSampleRate, ConstSampleRate.N(time.Second/10))
-	return &AudioPlayer{controls: map[int]*beep.Ctrl{}}
+	return &AudioPlayer{controls: map[int]*beep.Ctrl{}, streamers: map[int]*beep.StreamSeekCloser{}}
 }
 
 // Return reader for audio data specified in payload
@@ -108,6 +109,8 @@ func (a *AudioPlayer) Quit(id int) error {
 }
 
 func (a *AudioPlayer) cleanup(id int) {
+	s := *a.streamers[id]
+	s.Close()
 	delete(a.controls, id)
 }
 
@@ -126,7 +129,7 @@ func (a *AudioPlayer) Play(p *message.PlayPayload) error {
 	if err != nil {
 		return err
 	}
-	defer streamer.Close()
+	a.streamers[p.Id] = &streamer
 
 	// Set optional infinite looping
 	l := 1
