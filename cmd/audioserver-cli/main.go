@@ -17,7 +17,7 @@ var (
 	sockAddr = flag.String("sockFile", "/tmp/go-audioserver.sock", "Path to socket address")
 	action   = flag.Int("act", 0, "Specified id for action")
 	id       = flag.Int("id", 1, "Id for new or existing playback")
-	format   = flag.String("fmt", "", "Audio file format")
+	format   = flag.String("f", "", "Audio file format")
 	path     = flag.String("path", "", "Path to audio file")
 	asData   = flag.Bool("asData", false, "Send audio as bytes")
 	volume   = flag.Int("vol", 0, "Modify audio volume")

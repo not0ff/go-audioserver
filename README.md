@@ -22,16 +22,16 @@ Server supports:
 
 ## Usage
 ### Prerequisites
-Make sure you have installed the newest version of go installed
+Make sure you have installed the newest version of go and ALSA installed
 - On Ubuntu/Debian:
 ```
 sudo add-apt-repository ppa:longsleep/golang-backports
 sudo apt update
-sudo apt install golang-go
+sudo apt install golang-go libasound2-dev
 ```
 - On Fedora:
 ```
-sudo dnf install golang -y   
+sudo dnf install golang alsa-lib-devel
 ```
 Add GOPATH to env
 ```
